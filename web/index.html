@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ClaimPass Prototype</title>
+<meta name="description" content="ClaimPass – tokenized claim verification. Course prototype, demo data only.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f3f4fb;
+    --ink: #14141c;
+    --muted: #6b6f80;
+    --faint: #9a9db0;
+    --line: #e7e8f0;
+    --card: #ffffff;
+    --accent: #4f46e5;
+    --accent-soft: #eef0ff;
+    --ok: #0f9d6b;
+    --ok-soft: #e4f7ef;
+    --warn: #b7791f;
+    --warn-soft: #fdf3e1;
+    --bad: #c53030;
+    --bad-soft: #fde8e8;
+    --token: #1d1e24;
+    --token-ink: #f4f4f7;
+    --mono: "JetBrains Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: Inter, system-ui, sans-serif;
+    color: var(--ink);
+    background:
+      radial-gradient(1200px 600px at -10% -10%, #e3e6ff 0%, transparent 60%),
+      radial-gradient(900px 500px at 110% 0%, #dff7f1 0%, transparent 55%),
+      radial-gradient(900px 600px at 100% 110%, #fff4d9 0%, transparent 55%),
+      var(--bg);
+    min-height: 100vh;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 24px 16px 64px; }
+  header { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .logo { width: 44px; height: 44px; border-radius: 12px; background: var(--accent); color: #fff;
+          display: grid; place-items: center; font-weight: 700; font-size: 20px; }
+  .brand b { display: block; font-size: 18px; }
+  .brand span { color: var(--muted); font-size: 13px; }
+  .roles { margin-left: auto; display: flex; gap: 4px; background: rgba(255,255,255,.8); padding: 5px;
+           border-radius: 999px; box-shadow: 0 1px 2px rgba(0,0,0,.04); flex-wrap: wrap; }
+  .roles button { border: 0; background: transparent; padding: 9px 16px; border-radius: 999px; font: inherit;
+                  font-size: 14px; color: var(--muted); cursor: pointer; }
+  .roles button[aria-pressed="true"] { background: var(--ink); color: #fff; }
+  .grid { display: grid; grid-template-columns: 1.1fr 1fr 1fr; gap: 20px; margin-top: 28px; align-items: start; }
+  @media (max-width: 1000px) { .grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } .roles { margin-left: 0; width: 100%; } }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--faint); }
+  .eyebrow .hl { color: var(--accent); font-weight: 600; }
+  h1 { font-size: clamp(28px, 3.4vw, 40px); line-height: 1.1; margin: 14px 0; letter-spacing: -.02em; }
+  h1 em { font-style: normal; color: var(--accent); }
+  .lead { color: var(--muted); line-height: 1.6; margin: 0 0 20px; }
+  .card { background: var(--card); border-radius: 22px; padding: 22px; box-shadow: 0 1px 2px rgba(20,20,40,.04), 0 8px 30px rgba(20,20,40,.05); margin-bottom: 20px; }
+  .card h2 { font-size: 20px; margin: 0; }
+  .card-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; gap: 10px; }
+  .card-head small { color: var(--faint); font-size: 13px; }
+  .status-title { font-size: 22px; font-weight: 600; margin: 8px 0 12px; }
+  .pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; font-size: 13px; font-weight: 500;
+          background: var(--ok-soft); color: var(--ok); }
+  .pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .pill.warn { background: var(--warn-soft); color: var(--warn); }
+  .pill.bad { background: var(--bad-soft); color: var(--bad); }
+  .pill.done { background: var(--accent-soft); color: var(--accent); }
+  .steps { list-style: none; padding: 0; margin: 18px 0 0; }
+  .steps li { display: grid; grid-template-columns: 26px 1fr auto; gap: 10px; align-items: center; padding: 9px 0; border-top: 1px solid var(--line); font-size: 14px; }
+  .dot { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--line); display: grid; place-items: center; font-size: 12px; color: #fff; }
+  .steps li.done .dot { background: var(--ok); border-color: var(--ok); }
+  .steps li.current .dot { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+  .steps li.current { font-weight: 600; }
+  .steps .who { color: var(--faint); font-size: 12px; }
+  .action label { display: block; font-size: 13px; color: var(--muted); margin: 10px 0 4px; }
+  .action input { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font: inherit; }
+  .btn { border: 0; border-radius: 12px; padding: 11px 16px; font: inherit; font-weight: 600; cursor: pointer; background: var(--accent); color: #fff; margin-top: 12px; margin-right: 6px; }
+  .btn.ghost { background: var(--accent-soft); color: var(--accent); }
+  .btn.danger { background: var(--bad-soft); color: var(--bad); }
+  .note { font-size: 13px; color: var(--muted); line-height: 1.5; }
+  .token { background: var(--token); color: var(--token-ink); border-radius: 18px; padding: 22px; font-family: var(--mono); }
+  .token .top { display: flex; justify-content: space-between; font-size: 13px; opacity: .85; }
+  .token .state { color: #3ddc97; letter-spacing: .12em; }
+  .token .value { font-family: Inter, sans-serif; font-size: 40px; font-weight: 700; margin: 26px 0 0; }
+  .token .unit { font-family: Inter, sans-serif; opacity: .7; font-size: 14px; }
+  .token dl { margin: 26px 0 0; display: grid; grid-template-columns: 1fr auto; gap: 10px; font-size: 13px; }
+  .token dt { opacity: .65; font-family: Inter, sans-serif; } .token dd { margin: 0; text-align: right; }
+  .meta { font-family: var(--mono); font-size: 12px; color: var(--faint); margin: 14px 0; }
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 10px 14px; font-size: 14px; border-top: 1px solid var(--line); padding-top: 14px; }
+  .kv dt { color: var(--faint); } .kv dd { margin: 0; text-align: right; font-weight: 500; }
+  .log { list-style: none; padding: 0; margin: 0; }
+  .log li { padding: 14px 0; border-top: 1px solid var(--line); }
+  .log li:first-child { border-top: 0; }
+  .log .row { display: flex; gap: 12px; align-items: center; }
+  .avatar { width: 38px; height: 38px; border-radius: 50%; background: #eeeff4; display: grid; place-items: center; font-size: 12px; font-weight: 600; color: var(--muted); flex: none; }
+  .log .org { font-weight: 600; } .log .person { color: var(--faint); font-size: 13px; }
+  .log .what { display: flex; justify-content: space-between; margin-top: 8px; font-size: 14px; gap: 10px; }
+  .hash { font-family: var(--mono); font-size: 12px; color: var(--faint); }
+  .log .when { display: flex; justify-content: space-between; color: var(--faint); font-size: 13px; margin-top: 4px; }
+  .lockd { color: var(--ok); font-weight: 600; }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 12px;
+           font-size: 14px; max-width: calc(100% - 32px); opacity: 0; transition: opacity .2s; pointer-events: none; font-family: var(--mono); }
+  .toast.show { opacity: 1; }
+  .switch { display: flex; align-items: center; gap: 10px; font-size: 14px; margin-top: 6px; }
+  footer { color: var(--faint); font-size: 12px; text-align: center; margin-top: 30px; line-height: 1.6; }
+  footer a { color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">C</div>
+    <div class="brand"><b>ClaimPass</b><span>Tokenized claim verification · If P&amp;C Insurance (course prototype)</span></div>
+    <nav class="roles" id="roles" aria-label="View as"></nav>
+  </header>
+
+  <div class="grid">
+    <!-- Column 1: claim + action -->
+    <section>
+      <div class="eyebrow"><span class="hl" id="claimState">Active claim</span> &nbsp; CP-8842 · Permissioned EVM network</div>
+      <h1>Collision damage, <em>Volkswagen Golf GTI</em> — <span id="headline">awaiting repair estimate.</span></h1>
+      <p class="lead">The same record is read by customer, If, workshop and supplier. Each step is confirmed once by the responsible party — no party can alter a record another party created.</p>
+
+      <div class="card">
+        <div class="eyebrow">Claim status</div>
+        <div class="status-title" id="statusTitle"></div>
+        <span class="pill" id="statusPill"></span>
+        <ol class="steps" id="steps"></ol>
+      </div>
+
+      <div class="card action" id="action"></div>
+    </section>
+
+    <!-- Column 2: token -->
+    <section>
+      <div class="card">
+        <div class="eyebrow" style="margin-bottom:14px">ClaimPass token</div>
+        <div class="token">
+          <div class="top"><span>CP-8842</span><span class="state" id="tokenState">ACTIVE</span></div>
+          <div class="value" id="tokenValue">24,800</div>
+          <div class="unit" id="tokenUnit">SEK claim value</div>
+          <dl>
+            <dt>Holder</dt><dd>pid-7f2c…e19a</dd>
+            <dt>Transferable</dt><dd>No</dd>
+          </dl>
+        </div>
+        <div class="meta">Issued Mar 4, 2026 · Hash anchored on Polygon</div>
+        <dl class="kv">
+          <dt>Read access</dt><dd>Customer · If · Workshop · Supplier</dd>
+          <dt>Write access</dt><dd>Own step only</dd>
+          <dt>Personal data on-chain</dt><dd>None — status only</dd>
+          <dt>Record</dt><dd id="recordCount"></dd>
+        </dl>
+        <button class="btn danger" id="tryTransfer">Try to transfer token</button>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Settings</h2><small>If governance</small></div>
+        <label class="switch"><input type="checkbox" id="autoPayout"> Automatic payout when repair is verified (phase 3)</label>
+        <p class="note">Automation can release a payout but can never reject a claim. Estimates above the approved amount go to a person.</p>
+        <button class="btn ghost" id="reset">Reset demo</button>
+      </div>
+    </section>
+
+    <!-- Column 3: log -->
+    <section>
+      <div class="card">
+        <div class="card-head"><h2>Verification log</h2><small>who verified what</small></div>
+        <ul class="log" id="log"></ul>
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    Course prototype for “Blockchain for business”, Medieinstitutet. Not an If product. All names, numbers and hashes are demo data.<br>
+    This page simulates the rules of <code>src/ClaimPass.sol</code> in the browser; run <code>forge test</code> for the real contract.
+  </footer>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(() => {
+  const ROLES = [
+    { id: "customer", label: "Customer" },
+    { id: "handler", label: "If handler" },
+    { id: "workshop", label: "Workshop" },
+    { id: "supplier", label: "Supplier" },
+  ];
+  const PARTIES = {
+    issuer:   { org: "If P&C Insurance", person: "Issuer", initials: "IF" },
+    customer: { org: "Private customer", person: "Elin Ekqvist", initials: "EE" },
+    handler:  { org: "If P&C Insurance", person: "Marcus Lind", initials: "ML" },
+    handler2: { org: "If P&C Insurance", person: "Sara Holm", initials: "SH" },
+    workshop: { org: "Bilverkstaden Syd AB", person: "Workshop", initials: "BS" },
+    supplier: { org: "Reservdelar Norden", person: "Parts supplier", initials: "RN" },
+    contract: { org: "ClaimPass contract", person: "Automatic", initials: "⚙" },
+  };
+  // Mirrors enum Step in ClaimPass.sol – and who is responsible for each step
+  const STEPS = [
+    { name: "Accident report",  role: "customer", doc: "accident-report.pdf" },
+    { name: "Damage assessment", role: "handler", doc: "assessment.pdf", amount: "Approved amount (SEK)", def: 24800 },
+    { name: "Repair estimate",  role: "workshop", doc: "estimate.pdf", amount: "Estimate (SEK)", def: 21500 },
+    { name: "Parts order",      role: "supplier", doc: "parts-order.pdf" },
+    { name: "Repair completed", role: "workshop", doc: "repair-done.jpg" },
+    { name: "Payout",           role: "handler", doc: "payout-order" },
+  ];
+  const HEADLINES = ["awaiting accident report.", "awaiting damage assessment.", "awaiting repair estimate.",
+                     "awaiting parts order.", "awaiting repair completion.", "awaiting payout."];
+
+  const $ = (id) => document.getElementById(id);
+  let role = "workshop";
+  let s;
+
+  const fakeHash = async (text) => {
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text + Date.now()));
+    const hex = [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+    return "0x" + hex;
+  };
+  const short = (h) => h.slice(0, 6) + "…" + h.slice(-4);
+  const fmtDate = (d) => d.toLocaleString("en-GB", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }).replace(",", "");
+  const sek = (n) => n.toLocaleString("en-US");
+
+  function initialState() {
+    // Same starting point as the prototype screenshots: 2 of 6 verified
+    return {
+      status: "Active", verified: 2, approved: 24800, estimate: 0, flaggedBy: null, autoPayout: false,
+      log: [
+        { party: "handler", what: "Damage assessment", hash: "0x4b0e9c1d2a7f77aa", at: new Date(2026, 2, 7, 14, 40), kind: "Locked" },
+        { party: "customer", what: "Accident report", hash: "0x9f3a51e0d2c8c41b", at: new Date(2026, 2, 4, 9, 12), kind: "Locked" },
+        { party: "issuer", what: "Token issued for the claim", hash: "0x1a88f0e9b3d202fd", at: new Date(2026, 2, 4, 8, 55), kind: "Mint" },
+      ],
+    };
+  }
+
+  function toast(msg) {
+    const t = $("toast"); t.textContent = msg; t.classList.add("show");
+    clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("show"), 3200);
+  }
+
+  async function addLog(party, what, kind = "Locked") {
+    s.log.unshift({ party, what, hash: await fakeHash(what), at: new Date(), kind });
+  }
+
+  // ---- contract rules (same checks as verifyStep / resolveReview) ----
+  async function verifyStep(amount) {
+    const step = STEPS[s.verified];
+    if (s.status !== "Active") return toast(`Reverted: ClaimNotActive(${s.status})`);
+    if (step.role !== role) return toast(`Reverted: NotResponsibleParty(${step.name})`);
+    if (step.amount && !(amount > 0)) return toast("Reverted: InvalidAmount()");
+    if (s.verified === 1) s.approved = amount;
+    if (s.verified === 2) s.estimate = amount;
+    s.verified++;
+    await addLog(role, step.name);
+
+    if (s.verified === 3 && s.estimate > s.approved) {
+      s.status = "Under review"; s.flaggedBy = "contract";
+      await addLog("contract", "Estimate above approved → sent to a person", "Review");
+      toast("Estimate above approved amount — a handler must decide");
+    } else if (s.verified === 5 && s.autoPayout) {
+      s.verified++;
+      await addLog("contract", "Payout released automatically", "Payout");
+      s.status = "Closed";
+      toast(`PayoutReleased: SEK ${sek(Math.min(s.estimate, s.approved))} via bank (automatic)`);
+    } else if (s.verified === 6) {
+      s.status = "Closed";
+      toast(`PayoutReleased: SEK ${sek(Math.min(s.estimate, s.approved))} via bank`);
+    } else {
+      toast(`StepVerified: ${step.name}`);
+    }
+    render();
+  }
+
+  async function sendToReview() {
+    if (s.status !== "Active") return;
+    s.status = "Under review"; s.flaggedBy = "handler";
+    await addLog("handler", "Sent to human review", "Review");
+    render();
+  }
+
+  async function resolveReview(reject, who) {
+    if (s.flaggedBy === who) return toast("Reverted: FourEyesRequired() — another handler must decide");
+    s.flaggedBy = null;
+    if (reject) { s.status = "Rejected"; await addLog(who, "Claim rejected with written explanation", "Rejected"); }
+    else { s.status = "Active"; if (s.estimate > s.approved) s.approved = s.estimate; await addLog(who, "Review: claim continues", "Locked"); }
+    render();
+  }
+
+  // ---- rendering ----
+  function render() {
+    $("roles").innerHTML = ROLES.map((r) => `<button aria-pressed="${r.id === role}" data-role="${r.id}">${r.label}</button>`).join("");
+
+    const done = s.status === "Closed";
+    $("claimState").textContent = s.status === "Active" ? "Active claim" : s.status + " claim";
+    $("headline").textContent = done ? "paid out." : s.status === "Rejected" ? "rejected." :
+      s.status === "Under review" ? "with a claims handler." : HEADLINES[s.verified];
+    $("statusTitle").textContent = done ? "Closed — payout released" : s.status === "Active"
+      ? `In progress — ${STEPS[s.verified].name.toLowerCase()}` : s.status;
+    const pill = $("statusPill");
+    pill.textContent = `${s.verified} of 6 verified`;
+    pill.className = "pill" + (done ? " done" : s.status === "Rejected" ? " bad" : s.status === "Under review" ? " warn" : "");
+
+    $("steps").innerHTML = STEPS.map((st, i) => {
+      const cls = i < s.verified ? "done" : i === s.verified && s.status === "Active" ? "current" : "";
+      const who = st.role === "handler" ? "If" : PARTIES[st.role].org;
+      return `<li class="${cls}"><span class="dot">${i < s.verified ? "✓" : ""}</span><span>${st.name}</span><span class="who">${who}</span></li>`;
+    }).join("");
+
+    $("tokenState").textContent = s.status.toUpperCase();
+    $("tokenState").style.color = done ? "#9aa5ff" : s.status === "Active" ? "#3ddc97" : s.status === "Rejected" ? "#ff8a8a" : "#f6c46b";
+    $("tokenValue").textContent = sek(done ? Math.min(s.estimate, s.approved) : s.approved);
+    $("tokenUnit").textContent = done ? "SEK paid out via bank" : "SEK claim value";
+    $("recordCount").textContent = `${s.log.length} events`;
+    $("autoPayout").checked = s.autoPayout;
+
+    $("log").innerHTML = s.log.map((e) => {
+      const p = PARTIES[e.party];
+      return `<li><div class="row"><span class="avatar">${p.initials}</span><div><div class="org">${p.org}</div><div class="person">${p.person}</div></div></div>
+        <div class="what"><span>${e.what}</span><span class="hash">${short(e.hash)}</span></div>
+        <div class="when"><span>${fmtDate(e.at)}</span><span class="${e.kind === "Locked" ? "lockd" : ""}">${e.kind === "Locked" ? "✓ Locked" : e.kind}</span></div></li>`;
+    }).join("");
+
+    renderAction();
+  }
+
+  function renderAction() {
+    const a = $("action");
+    const roleLabel = ROLES.find((r) => r.id === role).label;
+    if (s.status === "Closed") {
+      a.innerHTML = `<h2>Claim closed</h2><p class="note">All six steps are verified and the payout instruction went to If's payment system. Customers are paid in SEK through their ordinary bank — no crypto involved.</p>`;
+      return;
+    }
+    if (s.status === "Rejected") {
+      a.innerHTML = `<h2>Claim rejected</h2><p class="note">Rejected by a person, with a written explanation to the customer. The customer can ask for a new review.</p>`;
+      return;
+    }
+    if (s.status === "Under review") {
+      if (role !== "handler") {
+        a.innerHTML = `<h2>With a claims handler</h2><p class="note">The claim is paused while a person at If looks at it. As ${roleLabel.toLowerCase()} you can still read the record.</p>`;
+        return;
+      }
+      a.innerHTML = `<h2>Human review</h2>
+        <p class="note">Estimate SEK ${sek(s.estimate)} · approved SEK ${sek(s.approved)}. A rejection can never come from the automation, and not from the handler who flagged the claim.</p>
+        <button class="btn" data-act="accept-ml">Continue (Marcus Lind)</button>
+        <button class="btn danger" data-act="reject-ml">Reject (Marcus Lind)</button>
+        <button class="btn danger" data-act="reject-sh">Reject (Sara Holm, 2nd handler)</button>`;
+      return;
+    }
+    const step = STEPS[s.verified];
+    if (step.role !== role) {
+      const owner = ROLES.find((r) => r.id === step.role).label;
+      a.innerHTML = `<h2>Read only</h2><p class="note">Next step is <b>${step.name}</b>, which only the ${owner.toLowerCase()} can verify. As ${roleLabel.toLowerCase()} you see the same record, but you can only write your own step.</p>
+        <button class="btn ghost" data-act="force">Try anyway</button>${role === "handler" ? `<button class="btn danger" data-act="flag">Send to review</button>` : ""}`;
+      return;
+    }
+    a.innerHTML = `<h2>Your step: ${step.name}</h2>
+      <label>Document (only its hash goes on-chain)</label><input id="doc" value="${step.doc}">
+      ${step.amount ? `<label>${step.amount}</label><input id="amt" type="number" min="1" value="${step.def}">` : ""}
+      <button class="btn" data-act="verify">Verify ${step.name.toLowerCase()}</button>
+      ${role === "handler" ? `<button class="btn danger" data-act="flag">Send to review</button>` : ""}
+      <p class="note">${role === "customer" ? "You confirm in If's app as usual — no wallet needed. The app records it for you." :
+        step.amount && s.verified === 2 ? "Try an estimate above SEK " + sek(s.approved) + " to see the human-review rule." : "Once verified, the step is locked."}</p>`;
+  }
+
+  document.addEventListener("click", (ev) => {
+    const r = ev.target.closest("[data-role]");
+    if (r) { role = r.dataset.role; render(); return; }
+    const act = ev.target.closest("[data-act]")?.dataset.act;
+    if (!act) return;
+    if (act === "verify") verifyStep(Number($("amt")?.value || 0));
+    if (act === "force") verifyStep(STEPS[s.verified].def || 0);
+    if (act === "flag") sendToReview();
+    if (act === "accept-ml") resolveReview(false, "handler");
+    if (act === "reject-ml") resolveReview(true, "handler");
+    if (act === "reject-sh") resolveReview(true, "handler2");
+  });
+  $("tryTransfer").onclick = () => toast("Reverted: NonTransferable() — the token belongs to the claim");
+  $("autoPayout").onchange = (e) => { s.autoPayout = e.target.checked; toast(`SettingsUpdated: autoPayout = ${s.autoPayout}`); };
+  $("reset").onclick = () => { s = initialState(); render(); };
+
+  s = initialState();
+  render();
+})();
+</script>
+</body>
+</html>
